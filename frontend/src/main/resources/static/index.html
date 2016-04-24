@@ -2,11 +2,263 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Test</title>
+    <title>Chat room</title>
     <script type="application/javascript" src="jquery-2.2.3.min.js"></script>
+    <script type="application/javascript" src="sockjs.min.js"></script>
+    <script type="application/javascript" src="stomp.min.js"></script>
+    <script type="application/javascript">
+        $(document).ready(function(){
+
+            var client = null;
+            var room = null;
+            var sender = null;
+            var channel = null;
+
+            function getArchiveMessages(){
+                clearChatMessages();
+                $.ajax({
+                    url: '/api/messages/'+getRoom(),
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {},
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    success: function(data, status, jqXhr) {
+                        if(data.hasOwnProperty('isError') && data.hasOwnProperty('data') && !data.isError){
+                            data.data.forEach(function(e){
+                                receiveMessage(e);
+                            });
+                        }else{
+                            if(data.hasOwnProperty('message'))
+                                error(data.message);
+                            else
+                                error('Something went wrong with the REST API!');
+                        }
+                    },
+                    error: function(jqXhr, status, errorMsg) {
+                        if(jqXhr.json && jqXhr.json.hasOwnProperty('isError') && jqXhr.json.hasOwnProperty('message'))
+                            errorMsg = jqXhr.json.message;
+                        error(jqXhr.status+' - '+status+': '+errorMsg);
+                    }
+                });
+            }
+
+            function isConnected() {
+                return (client != null && client.connected);
+            }
+
+            function subscribeToRoom(roomName){
+                if(roomName != room){
+                    if(isConnected() && channel != null) {
+                        channel.unsubscribe();
+                        channel = null;
+                    }
+                    room = roomName;
+                    getArchiveMessages();
+                }
+                if(channel == null && isConnected()){
+                    channel = client.subscribe('/topic/'+room, function(data){
+                        receiveMessage(JSON.parse(data.body));
+                    });
+                }
+            }
+
+            function getRoom() {
+                if(room == null) return 'default';
+                return room;
+            }
+
+            function checkData() {
+                if($('#message').val() == '') return false;
+                return sender != null;
+            }
+
+            function getData() {
+                return JSON.stringify(
+                        {message: $('#message').val(), roomName: getRoom(), senderName: sender}
+                );
+            }
+
+            function resetFlashMessages() {
+                $('#error').text('');
+                $('#success').text('');
+            }
+
+            function error(msg) {
+                $('#error').text('ERROR: '+msg);
+            }
+
+            function success(msg) {
+                $('#success').text('SUCCESS: '+msg);
+            }
+
+            function receiveMessage(msg) {
+                var color = 'black';
+                if(msg.senderName == sender) color = 'grey';
+                $('#messages').append(
+                        '<div style="color: '+color+';">'+msg.senderName+': '+msg.message+'</div>'
+                );
+                document.getElementById('messagesBottom').scrollIntoView();
+            }
+
+            function clearChatMessages() {
+                $('#messages').text('');
+            }
+
+            $('#clear').click(function(event){
+                resetFlashMessages();
+                clearChatMessages();
+            });
+
+            $('#connect').click(function(event){
+                resetFlashMessages();
+
+                var socket = new SockJS('/ws/chat');
+                client = Stomp.over(socket);
+                client.connect(
+                    {},
+                    function(frame) {
+                        subscribeToRoom(getRoom());
+
+                        $('#connect').hide();
+                        $('#disconnect').show();
+                    },
+                    function(errorMsg) {
+                        $('#disconnect').click();
+                        error(errorMsg);
+                    }
+                );
+            });
+
+            $('#disconnect').click(function(event){
+                resetFlashMessages();
+                if (client != null) {
+                    client.disconnect();
+                    channel = null;
+                    client = null;
+                }
+                $(this).hide();
+                $('#connect').show();
+            });
+
+            $('#sendMessage').submit(function(event){
+                resetFlashMessages();
+                if(checkData()){
+                    $.ajax({
+                        url: '/api/message',
+                        type: 'PUT',
+                        dataType: 'json',
+                        data: getData(),
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        success: function(data, status, jqXhr) {
+                            if(data.hasOwnProperty('isError') && data.hasOwnProperty('data') && !data.isError){
+                                success('Message sent!');
+                            }else{
+                                if(data.hasOwnProperty('message'))
+                                    error(data.message);
+                                else
+                                    error('Something went wrong with the REST API!');
+                            }
+                        },
+                        error: function(jqXhr, status, errorMsg) {
+                            if(jqXhr.json && jqXhr.json.hasOwnProperty('isError') && jqXhr.json.hasOwnProperty('message'))
+                                    errorMsg = jqXhr.json.message;
+                            error(jqXhr.status+' - '+status+': '+errorMsg);
+                        }
+                    });
+                }else{
+                    error('Invalid or missing data!');
+                }
+
+                event.preventDefault();
+                return false;
+            });
+
+            $('#submitWsMessage').click(function(event){
+                resetFlashMessages();
+                if(isConnected()) {
+                    if(checkData()){
+                        client.send('/app/room/'+room, {}, getData());
+                        if($('#error').text() == '')
+                                success('Message sent!');
+                    }else{
+                        error('Invalid or missing data!');
+                    }
+                }else{
+                    error('Create connection before send a message!');
+                }
+
+                event.preventDefault();
+                return false;
+            });
+
+            $('#changeRoom').submit(function(event){
+                resetFlashMessages();
+                var newRoom = $('#room').val();
+                if(newRoom == ''){
+                    $('#name').val(room);
+                    error('Empty room name!');
+                }else{
+                    subscribeToRoom(newRoom);
+                }
+
+                event.preventDefault();
+                return false;
+            });
+
+            $('#changeName').submit(function(event){
+                resetFlashMessages();
+                var name = $('#name').val();
+                if(name == ''){
+                    $('#name').val(sender);
+                    error('Empty user name!');
+                }else{
+                    sender = name;
+                }
+
+                event.preventDefault();
+                return false;
+            });
+
+            // Fire up the app!
+            getArchiveMessages();
+
+        });
+    </script>
 </head>
 <body>
-    <h1>Test pad</h1>
-
+    <h1>Chat room</h1>
+    <div id="error" style="color: red;"></div>
+    <div id="success" style="color: green;"></div>
+    <div id="messageContainer" style="overflow: scroll; height: 200px; border: 1px solid black; margin: 20px 0 20px 0;">
+        <span id="messages"></span>
+        <span id="messagesBottom"></span>
+    </div>
+    <form id="changeName">
+        <label for="changeName">Name</label>
+        <input type="text" id="name" name="name" value="" />
+        <input type="submit" id="submitName" value="Set name" />
+    </form>
+    <form id="changeRoom">
+        <label for="changeRoom">Room</label>
+        <input type="text" id="room" name="room" value="default" />
+        <input type="submit" id="submitRoom" value="Change room" />
+    </form>
+    <form id="sendMessage">
+        <label for="message">Message</label>
+        <input type="text" id="message" name="message" />
+        <input type="submit" id="submitWsMessage" value="Send (WebSocket)" />
+        <input type="submit" id="submitRestMessage" value="Send (REST)" />
+    </form>
+    <div>
+        <button id="connect">Connect</button>
+        <button id="disconnect" style="display: none;">Disconnect</button>
+        <button id="clear">Clear messages</button>
+    </div>
 </body>
 </html>

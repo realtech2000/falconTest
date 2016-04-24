@@ -14,12 +14,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CommonDbAppConfig {
 
-    @Bean
+    @Bean(name = "CommonDbReadService")
     public ReadService readService(MessageRepository messageRepository) {
         return new ReadServiceImpl(messageRepository);
     }
 
-    @Bean
+    @Bean(name = "CommonDbWriteService")
     public WriteService writeService(MessageRepository messageRepository) {
         return new WriteServiceImpl(messageRepository);
     }

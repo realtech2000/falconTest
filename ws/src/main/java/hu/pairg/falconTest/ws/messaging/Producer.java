@@ -1,6 +1,7 @@
-package hu.pairg.falconTest.api.messaging;
+package hu.pairg.falconTest.ws.messaging;
 
-import hu.pairg.falconTest.api.domain.Message;
+import hu.pairg.falconTest.ws.messaging.dto.ChannelMessage;
+import hu.pairg.falconTest.ws.domain.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.integration.support.MessageBuilder;
@@ -8,9 +9,9 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 
 /**
- * Created by pairg on 2016.04.23..
+ * Created by pairg on 2016.04.24..
  */
-@Component("ApiMessagingProducer")
+@Component("WsMessagingProducer")
 public class Producer {
 
     private final MessageChannel messageChannel;
@@ -20,9 +21,10 @@ public class Producer {
         this.messageChannel = messageChannel;
     }
 
-    public void send(Message message){
+    public void send(String roomName, Message msg){
+        ChannelMessage channelMessage = new ChannelMessage(roomName, msg.getSenderName(), msg.getMessage());
         this.messageChannel.send(
-                MessageBuilder.withPayload(message)
+                MessageBuilder.withPayload(channelMessage)
                         .setHeader("topic", MessageChannels.OUTPUT)
                         .build()
         );

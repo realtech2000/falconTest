@@ -16,12 +16,12 @@ import org.springframework.integration.support.json.JsonObjectMapperProvider;
 @Import(hu.pairg.falconTest.commonDb.CommonDbApplication.class)
 public class ProcessAppConfig {
 
-    @Bean
+    @Bean(name = "ProcessCreateMessageService")
     public CreateMessageService createMessageService(WriteService dbWriteService) {
         return new CreateMessageServiceImpl(dbWriteService);
     }
 
-    @Bean
+    @Bean(name = "ProcessJsonObjectMapper")
     public JsonObjectMapper<?, ?> jsonObjectMapper() {
         return JsonObjectMapperProvider.newInstance();
     }

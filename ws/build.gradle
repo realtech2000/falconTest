@@ -16,7 +16,7 @@ apply plugin: 'idea'
 apply plugin: 'spring-boot'
 
 jar {
-    baseName = 'falconTest'
+    baseName = 'falconTestWs'
     version =  '0.1.0-SNAPSHOT'
 }
 
@@ -30,13 +30,11 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-websocket")
+    compile("org.springframework.cloud:spring-cloud-starter-stream-kafka")
     compile("org.springframework.boot:spring-boot-devtools")
-    compile project(":api")
-    compile project(":ws")
-    compile project(":process")
-    compile project(":frontend")
     testCompile("junit:junit")
+    testCompile("org.springframework.boot:spring-boot-starter-test")
 }
 
 dependencyManagement {

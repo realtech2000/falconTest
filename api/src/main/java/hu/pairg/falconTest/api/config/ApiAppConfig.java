@@ -17,16 +17,14 @@ import org.springframework.context.annotation.Import;
 @Import(hu.pairg.falconTest.commonDb.CommonDbApplication.class)
 public class ApiAppConfig {
 
-    @Bean
+    @Bean(name = "ApiCommandService")
     public CommandService commandService(Producer producer) {
         return new CommandServiceImpl(producer);
     }
 
-
-    @Bean
+    @Bean(name = "ApiQueryService")
     public QueryService queryService(ReadService dbReadService) {
         return new QueryServiceImpl(dbReadService);
     }
-
 
 }
