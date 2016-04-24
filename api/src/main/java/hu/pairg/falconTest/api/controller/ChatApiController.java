@@ -30,8 +30,11 @@ public class ChatApiController {
 
     @RequestMapping(path = "/message", method = RequestMethod.PUT)
     public @ResponseBody Envelope<Boolean> putMessage(@RequestBody Message message) throws BadFormatException {
-        if(!commandService.createMessage(message))
+        try{
+            commandService.createMessage(message);
+        }catch(Exception e){
             throw new BadFormatException("Invalid message!");
+        }
         return new Envelope<Boolean>(true);
     }
 

@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service;
 @Service
 public interface CommandService {
 
-    boolean createMessage(Message message);
+    void createMessage(Message message);
 
 }

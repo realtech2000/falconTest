@@ -1,5 +1,6 @@
 package hu.pairg.falconTest.api.config;
 
+import hu.pairg.falconTest.api.messaging.Producer;
 import hu.pairg.falconTest.api.service.CommandService;
 import hu.pairg.falconTest.api.service.CommandServiceImpl;
 import hu.pairg.falconTest.api.service.QueryService;
@@ -17,9 +18,10 @@ import org.springframework.context.annotation.Import;
 public class ApiAppConfig {
 
     @Bean
-    public CommandService commandService() {
-        return new CommandServiceImpl();
+    public CommandService commandService(Producer producer) {
+        return new CommandServiceImpl(producer);
     }
+
 
     @Bean
     public QueryService queryService(ReadService dbReadService) {

@@ -6,6 +6,8 @@ import hu.pairg.falconTest.process.service.CreateMessageServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.integration.support.json.JsonObjectMapper;
+import org.springframework.integration.support.json.JsonObjectMapperProvider;
 
 /**
  * Created by pairg on 2016.04.23..
@@ -17,6 +19,11 @@ public class ProcessAppConfig {
     @Bean
     public CreateMessageService createMessageService(WriteService dbWriteService) {
         return new CreateMessageServiceImpl(dbWriteService);
+    }
+
+    @Bean
+    public JsonObjectMapper<?, ?> jsonObjectMapper() {
+        return JsonObjectMapperProvider.newInstance();
     }
 
 }
