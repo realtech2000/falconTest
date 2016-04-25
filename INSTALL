@@ -34,7 +34,7 @@ settings:
         > cd falconTest
         > docker-compose -f docker-compose-separated.yml up
 
-5) Open up in a browser:
+5) Open up this page in a browser:
 http://localhost:8080
 
 

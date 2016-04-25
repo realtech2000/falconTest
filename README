@@ -9,20 +9,99 @@ See the 'INSTALL' file!
 FEATURES
 
 Chat room app:
-- Different rooms
-- Send messages with WebSocket
-- Send messages with REST API
-- Receiver messages with WebSocket
-- See all archive messages with REST API
-- See archive messages in one room with REST API
+- Separated rooms
+- Send messages with WebSocket (WS /ws/chat)
+- Send messages with REST API (PUT /api/message)
+- Receiver messages with WebSocket (WS /ws/chat)
+- See all archive messages with REST API (GET /api/messages)
+- See archive messages in one room with REST API (GET /api/messages/<roomName>)
 
 Technology stack:
 - Language: Java 8
 - Build system: Gradle
 - Framework: Spring Boot with MVC, Spring Data, Spring Integration, Spring Cloud Stream, Spring Cloud Service Discovery
-- Messaging: Kafka
+- Messaging: Kafka, WebSocket with STOMP
 - Database: Postgresql 9.4 with Hibernate (JPA)
 - Service discovery: Zookeeper
 - OS: Ubuntu (Docker image)
 - Running environment: Docker and Docker Composer
+
+
+DISCLAIMER
+I'm not a Spring master and I'm also not familiar with the Kafka before that, so almost all of
+my code is built with new technology from my point of view. That was fun, but maybe you know
+some tricks in the frameworks that I should use, but I don't know about it.
+
+
+CODE STYLE
+This app is very-very over-engineered, but hey, this is a tech assessment!
+I completely separated the DB layer from the domain layer and the endpoints (controller) from
+the domain layer. Messaging also separated from the other parts of the app. This is not
+necessary in this project, but important in a bigger one.
+
+One of the microservice architecture's disadvantages that you need to make some code
+duplications. This is a standard practice, because you need to completely separate the services.
+If your services have a common dependency and this dependency was changed somehow you will
+not know about that changes and your services will fail. To preventing this everybody needs to
+maintain the connection with the common dependency (like db schemas). This is why this code
+contains some duplications.
+
+
+ARCHITECTURE
+
+I used microservice architecture for this app. We will have 7 separated service, 4 from my code.
+You can also use this app as one. For example if you are a startup you can start with one app on
+one server and later separate the services to different servers. Also good for debugging.
+
+Create message:
+User ---HTTP--> REST API --|--Kafka--> Process ---JDBC--> DB
+                           |--Kafka--> Ws ---WebSocket--> Users in the room
+Get archive messages:
+User ---HTTP--> REST API ---JDBC--> DB
+
+
+Api
+This is the REST API service:
+- get archive messages: read (only) the db
+- create message: send message to the Kafka
+I used the CQRS pattern so later you can divide this service to two parts easily.
+This service only reads from the db so only one service writes the db. This is important in a
+microservice architecture to prevent a lot of possible mistakes.
+
+
+Frontend
+This is a normal MVC and/or static app for the app's frontend. This is separated from the APIs
+so you can change this code in a different speed and you can also specialize the environment
+for this type of task. For example you can use something more convenient and faster solution
+than Java for the static files.
+
+This app also contains a load balancer: it's using the Zookeeper to get the port of a REST
+API and a WebSocket endpoint. If you have more than one of this service it can handle the load
+balancing for you.
+
+
+Process
+This is a background process to process the incoming data and save them. Currently is very
+lightweight but in the real life this type of tasks are very heavy. The messages came from
+the Kafka and this app save them to the db.
+
+
+Ws
+This is the WebSocket endpoint service:
+- receive incoming messages: messages coming from the Kafka
+- create message: send message to the Kafka
+This is a gateway between the websocket and the Kafka. WebSockets need a special care from the
+DevOps side, because it's using a lot of port and I/O and the response time is matter. Usually
+you need special softwares (better tcp stack) for this type of servers.
+
+
+CommonDb
+This is not a real service, just a module in the project. Hibernate not tolerate different
+entity classes for the same table so I need to create this common db implementation and later
+use it in the Process and the Api service. This is a trade-off between the two type of usage.
+If you want to use this app as separated services you can easily copy this code to this
+two project. Or you can create a REST API for this module and create another real service
+on the top of the DB.
+
+
 
