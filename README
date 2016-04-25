@@ -1,0 +1,28 @@
+Falcon Test - Chat room
+by Gergő Pásztor
+
+INSTALL & UNINSTALL
+
+See the 'INSTALL' file!
+
+
+FEATURES
+
+Chat room app:
+- Different rooms
+- Send messages with WebSocket
+- Send messages with REST API
+- Receiver messages with WebSocket
+- See all archive messages with REST API
+- See archive messages in one room with REST API
+
+Technology stack:
+- Language: Java 8
+- Build system: Gradle
+- Framework: Spring Boot with MVC, Spring Data, Spring Integration, Spring Cloud Stream, Spring Cloud Service Discovery
+- Messaging: Kafka
+- Database: Postgresql 9.4 with Hibernate (JPA)
+- Service discovery: Zookeeper
+- OS: Ubuntu (Docker image)
+- Running environment: Docker and Docker Composer
+

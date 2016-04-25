@@ -1,0 +1,50 @@
+version: '2'
+
+services:
+
+  falcon_test:
+    image: pairg:falconTest
+    build: .
+    ports:
+     - "8080:8080"
+    volumes:
+     - ./:/app
+    links:
+     - zookeeper:zookeeper
+     - kafka:kafka
+     - db:db
+    networks:
+      - front-tier
+      - back-tier
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    networks:
+      - back-tier
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_PORT=9092
+    links:
+      - zookeeper:zookeeper
+    networks:
+      - back-tier
+
+  db:
+    image: postgres:9.4
+    container_name: db
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=falcon_test
+    networks:
+      - back-tier
+
+networks:
+  front-tier:
+  back-tier:

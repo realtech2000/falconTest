@@ -1,0 +1,54 @@
+INSTALL
+
+System requirements: Docker, Docker Compose
+
+1) Install Docker
+Follow the official instructions:
+https://docs.docker.com/engine/installation/
+
+2) Install Docker Compose
+Follow the official instructions:
+https://docs.docker.com/compose/install/
+
+3) Create falconTestCommonDb image
+This image is a base image for other images, but not an independent app, so you
+need to build this, because docker compose can't build it like the other images.
+Go to the dir and build with the docker command:
+> cd commonDb
+> docker build -t pairg:falconTestCommonDb .
+
+4) Run the app
+Run the Docker Compose to create and run the images. You can choose from two
+settings:
+    - docker-compose.yml:
+        one full app (pairg:falconTest) + zookeeper + kafka + db
+        Lighter memory and cpu footprint.
+
+        > cd falconTest
+        > docker-compose up
+
+    - docker-compose-separated.yml:
+        4 separated app (ws, api, frontend, process) + zookeeper + kafka + db
+        Microservice architecture with service discovery.
+
+        > cd falconTest
+        > docker-compose -f docker-compose-separated.yml up
+
+5) Open up in a browser:
+http://localhost:8080
+
+
+
+UNINSTALL
+
+1) Stop and delete the containers
+> docker-compose -f docker-compose-separated.yml down
+OR
+> docker-compose -f docker-compose.yml down
+
+2) Delete the Docker images
+> docker rmi pairg:falconTest pairg:falconTestApi pairg:falconTestWs pairg:falconTestProcess pairg:falconTestFrontend
+
+3) Uninstall Docker and Docker Compose if you want...
+
+

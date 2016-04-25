@@ -1,0 +1,97 @@
+version: '2'
+
+services:
+
+  falcon_test_frontend:
+    image: pairg:falconTestFrontend
+    build: ./frontend/.
+    ports:
+     - "8080:8080"
+    volumes:
+     - ./frontend:/app
+    depends_on:
+     - falcon_test_process
+     - falcon_test_ws
+     - falcon_test_api
+    links:
+     - zookeeper:zookeeper
+    networks:
+      - front-tier
+      - back-tier
+
+  falcon_test_ws:
+    image: pairg:falconTestWs
+    build: ./ws/.
+    ports:
+     - "8083:8083"
+    volumes:
+     - ./ws:/app
+    depends_on:
+     - falcon_test_process
+    links:
+     - zookeeper:zookeeper
+     - kafka:kafka
+    networks:
+      - front-tier
+      - back-tier
+
+  falcon_test_api:
+    image: pairg:falconTestApi
+    build: ./api/.
+    ports:
+     - "8082:8082"
+    volumes:
+     - ./api:/app
+    depends_on:
+     - falcon_test_process
+    links:
+     - zookeeper:zookeeper
+     - kafka:kafka
+     - db:db
+    networks:
+      - front-tier
+      - back-tier
+
+  falcon_test_process:
+    image: pairg:falconTestProcess
+    build: ./process/.
+    volumes:
+     - ./process:/app
+    links:
+     - zookeeper:zookeeper
+     - kafka:kafka
+     - db:db
+    networks:
+      - back-tier
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    networks:
+      - back-tier
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ADVERTISED_PORT=9092
+    links:
+      - zookeeper:zookeeper
+    networks:
+      - back-tier
+
+  db:
+    image: postgres:9.4
+    container_name: db
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=falcon_test
+    networks:
+      - back-tier
+
+networks:
+  front-tier:
+  back-tier:
