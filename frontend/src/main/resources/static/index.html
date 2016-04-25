@@ -9,15 +9,47 @@
     <script type="application/javascript">
         $(document).ready(function(){
 
+            var restApiUrl = 'http://'+window.location.hostname;
+            var wsUrl = 'http://'+window.location.hostname;
+
             var client = null;
             var room = null;
             var sender = null;
             var channel = null;
 
+            function discoverServices(callback){
+                $.ajax({
+                    url: '/frontend/services',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {},
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    success: function(data, status, jqXhr) {
+                        if(
+                                data.hasOwnProperty('websocketServicePort') && data.websocketServicePort != null &&
+                                data.websocketServicePort != '' && data.hasOwnProperty('restServicePort') &&
+                                data.restServicePort != null && data.restServicePort != ''
+                        ){
+                            restApiUrl = 'http://'+window.location.hostname+':'+data.restServicePort;
+                            wsUrl = 'http://'+window.location.hostname+':'+data.websocketServicePort;
+                            callback();
+                        }else{
+                            error('Something went wrong with the service discovery!');
+                        }
+                    },
+                    error: function(jqXhr, status, errorMsg) {
+                        error('Service discovery failed: '+jqXhr.status+' - '+status+': '+errorMsg);
+                    }
+                });
+            }
+
             function getArchiveMessages(){
                 clearChatMessages();
                 $.ajax({
-                    url: '/api/messages/'+getRoom(),
+                    url: restApiUrl+'/api/messages/'+getRoom(),
                     type: 'GET',
                     dataType: 'json',
                     data: {},
@@ -115,7 +147,7 @@
             $('#connect').click(function(event){
                 resetFlashMessages();
 
-                var socket = new SockJS('/ws/chat');
+                var socket = new SockJS(wsUrl+'/ws/chat');
                 client = Stomp.over(socket);
                 client.connect(
                     {},
@@ -147,7 +179,7 @@
                 resetFlashMessages();
                 if(checkData()){
                     $.ajax({
-                        url: '/api/message',
+                        url: restApiUrl+'/api/message',
                         type: 'PUT',
                         dataType: 'json',
                         data: getData(),
@@ -226,7 +258,7 @@
             });
 
             // Fire up the app!
-            getArchiveMessages();
+            discoverServices(getArchiveMessages);
 
         });
     </script>
